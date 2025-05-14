@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="forclosure.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Housing Trends</title>
+</head>
+<body>
+    <h2>Yearly Home Sales Trend</h2>
+  <label>ZIP Code:
+    <input type="text" id="zipInput" placeholder="48317">
+    <button onclick="loadChart()">Load Data</button>
+  </label>
+  <canvas id="trendChart" width="600" height="300"></canvas>
+
+  <script>
+    const geoIdMap = {
+      '48317': '6828b00047035292dd47fe020e636bb3',
+      '90210': 'fed6b6317a5242ec4b432f405b614b0e', // Add more as needed
+    };
+
+    let chart;
+
+    async function loadChart() {
+      const zip = document.getElementById('zipInput').value.trim();
+      const geoId = geoIdMap[zip];
+      if (!geoId) return alert("ZIP not supported yet.");
+
+      const response = await fetch(`http://localhost:3000/transaction?geoId=${geoId}`);
+      const data = await response.json();
+
+      const years = data.map(d => d.year);
+      const medianPrices = data.map(d => d.medSalePrice);
+      const saleCounts = data.map(d => d.homeSaleCount);
+
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      if (chart) chart.destroy(); // Reset previous chart
+
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: years,
+          datasets: [
+            {
+              label: 'Median Sale Price',
+              data: medianPrices,
+              backgroundColor: 'rgba(54, 162, 235, 0.6)',
+              yAxisID: 'y',
+            },
+            {
+              label: 'Homes Sold',
+              data: saleCounts,
+              type: 'line',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              fill: false,
+              yAxisID: 'y1',
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          stacked: false,
+          scales: {
+            y: {
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: 'Median Price ($)' }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: 'Homes Sold' }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
